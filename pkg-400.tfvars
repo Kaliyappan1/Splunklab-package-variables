@@ -1,12 +1,12 @@
-key_name       = "kaliyappan"
-aws_access_key = "aws_access_key"
-aws_secret_key = "aws_secret_key"
+key_name       = "DYNAMIC_KEY_NAME"
+aws_access_key = "DYNAMIC_ACCESS_KEY"
+aws_secret_key = "DYNAMIC_SECRET_KEY"
 
 instance_type   = "t3.medium"
-aws_region      = "us-east-1"
+aws_region      = "DYNAMIC_REGION"
 storage_size    = 30
 instance_name   = "Splunk-standalone"
-usermail        = "yappank17@gmail.com"
+usermail        = "DYNAMIC_EMAIL"
 quotahours      = "45"
 category        = "splunk-SE-400"
-ssh_public_key  = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ..."
+ssh_public_key  = "ssh-rsa AAAA..."
