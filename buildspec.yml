@@ -1,0 +1,43 @@
+version: 0.2
+
+env:
+  variables:
+    USER_EMAIL: ""
+    HOURS: ""
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - yum install -y terraform ansible awscli jq unzip git
+
+  pre_build:
+    commands:
+      - cd $CODEBUILD_SRC_DIR
+
+      # Choose tfvars file
+      - echo "[*] Selected Hours: $HOURS"
+      - |
+        if [ "$HOURS" = "10" ]; then TFVARS="pkg_100.tfvars"; fi
+        if [ "$HOURS" = "21" ]; then TFVARS="pkg_200.tfvars"; fi
+        if [ "$HOURS" = "33" ]; then TFVARS="pkg_300.tfvars"; fi
+        if [ "$HOURS" = "45" ]; then TFVARS="pkg_400.tfvars"; fi
+        if [ "$HOURS" = "56" ]; then TFVARS="pkg_500.tfvars"; fi
+      - echo "Using $TFVARS"
+
+      # Inject email into tfvars file
+      - sed -i "s/usermail *= *.*/usermail = \"$USER_EMAIL\"/" $TFVARS
+
+  build:
+    commands:
+      - terraform init
+      - terraform apply -auto-approve -var-file="$TFVARS"
+
+      - PUBLIC_IP=$(terraform output -raw public_ip)
+      - echo "EC2 is running at: $PUBLIC_IP"
+
+      # Run Ansible to install Splunk
+      - terraform output -raw final_key_name > keyname.txt
+      - KEY_NAME=$(cat keyname.txt)
+      - ansible-playbook -i "$PUBLIC_IP," install-splunk.yml -u ec2-user --private-key "keys/$KEY_NAME.pem"
