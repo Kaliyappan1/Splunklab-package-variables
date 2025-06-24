@@ -14,13 +14,12 @@ phases:
     runtime-versions:
       python: 3.11
     commands:
-      - echo "[*] Installing Terraform via HashiCorp official repo..."
+      - echo "[*] Installing Terraform via HashiCorp repo"
       - yum install -y yum-utils
       - yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
       - yum -y install terraform
       - terraform -version
-
-      - echo "[*] Installing Ansible and other dependencies..."
+      - echo "[*] Installing Ansible and other tools"
       - amazon-linux-extras enable ansible2
       - yum clean metadata
       - yum install -y ansible awscli jq unzip git
@@ -28,16 +27,15 @@ phases:
   pre_build:
     commands:
       - cd $CODEBUILD_SRC_DIR
-      - echo "[*] Selecting tfvars file based on HOURS..."
+      - echo "[*] Selecting tfvars file based on HOURS"
       - |
-        if [ "$HOURS" = "10" ]; then TFVARS="pkg_100.tfvars"; fi
-        if [ "$HOURS" = "21" ]; then TFVARS="pkg_200.tfvars"; fi
-        if [ "$HOURS" = "33" ]; then TFVARS="pkg_300.tfvars"; fi
-        if [ "$HOURS" = "45" ]; then TFVARS="pkg_400.tfvars"; fi
-        if [ "$HOURS" = "56" ]; then TFVARS="pkg_500.tfvars"; fi
-        echo "Selected file: $TFVARS"
-
-      - echo "[*] Injecting environment variables into tfvars..."
+        if [ "$HOURS" = "10" ]; then export TFVARS="pkg_100.tfvars"; fi
+        if [ "$HOURS" = "21" ]; then export TFVARS="pkg_200.tfvars"; fi
+        if [ "$HOURS" = "33" ]; then export TFVARS="pkg_300.tfvars"; fi
+        if [ "$HOURS" = "45" ]; then export TFVARS="pkg_400.tfvars"; fi
+        if [ "$HOURS" = "56" ]; then export TFVARS="pkg_500.tfvars"; fi
+        echo "Selected tfvars: $TFVARS"
+      - echo "[*] Injecting values into tfvars file"
       - sed -i "s|usermail *= .*|usermail = \\\"$USER_EMAIL\\\"|" $TFVARS
       - sed -i "s|aws_region *= .*|aws_region = \\\"$AWS_REGION\\\"|" $TFVARS
       - sed -i "s|aws_access_key *= .*|aws_access_key = \\\"$AWS_ACCESS_KEY\\\"|" $TFVARS
@@ -49,14 +47,12 @@ phases:
       - echo "[*] Running Terraform..."
       - terraform init
       - terraform apply -auto-approve -var-file="$TFVARS"
-
-      - echo "[*] Getting Terraform outputs..."
-      - PUBLIC_IP=$(terraform output -raw public_ip)
-      - KEY_OUT=$(terraform output -raw final_key_name)
+      - echo "[*] Getting Terraform outputs"
+      - export PUBLIC_IP=$(terraform output -raw public_ip)
+      - export KEY_OUT=$(terraform output -raw final_key_name)
       - echo "Public IP: $PUBLIC_IP"
       - echo "PEM Key: $KEY_OUT.pem"
-
-      - echo "[*] Running Ansible Playbook..."
+      - echo "[*] Running Ansible Playbook"
       - ansible-playbook -i "$PUBLIC_IP," install-splunk.yml -u ec2-user --private-key "keys/$KEY_OUT.pem"
 
 artifacts:
