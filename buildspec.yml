@@ -28,29 +28,36 @@ phases:
     commands:
       - cd $CODEBUILD_SRC_DIR
       - echo "[*] Selecting tfvars file based on HOURS"
-      - if [ "$HOURS" = "10" ]; then export TFVARS="pkg_100.tfvars"; fi
-      - if [ "$HOURS" = "21" ]; then export TFVARS="pkg_200.tfvars"; fi
-      - if [ "$HOURS" = "33" ]; then export TFVARS="pkg_300.tfvars"; fi
-      - if [ "$HOURS" = "45" ]; then export TFVARS="pkg_400.tfvars"; fi
-      - if [ "$HOURS" = "56" ]; then export TFVARS="pkg_500.tfvars"; fi
-      - echo "Selected tfvars: $TFVARS"
-      - sed -i "s|usermail *= .*|usermail = \\\"$USER_EMAIL\\\"|" $TFVARS
-      - sed -i "s|aws_region *= .*|aws_region = \\\"$AWS_REGION\\\"|" $TFVARS
-      - sed -i "s|aws_access_key *= .*|aws_access_key = \\\"$AWS_ACCESS_KEY\\\"|" $TFVARS
-      - sed -i "s|aws_secret_key *= .*|aws_secret_key = \\\"$AWS_SECRET_KEY\\\"|" $TFVARS
-      - sed -i "s|key_name *= .*|key_name = \\\"$KEY_NAME\\\"|" $TFVARS
+      - |
+        case "$HOURS" in
+          "10") TFVARS="pkg_100.tfvars" ;;
+          "21") TFVARS="pkg_200.tfvars" ;;
+          "33") TFVARS="pkg_300.tfvars" ;;
+          "45") TFVARS="pkg_400.tfvars" ;;
+          "56") TFVARS="pkg_500.tfvars" ;;
+          *) echo "Invalid HOURS value"; exit 1 ;;
+        esac
+        echo "Selected: $TFVARS"
+        echo "[*] Injecting variables into $TFVARS"
+        sed -i "s|usermail *= .*|usermail = \\\"$USER_EMAIL\\\"|" $TFVARS
+        sed -i "s|aws_region *= .*|aws_region = \\\"$AWS_REGION\\\"|" $TFVARS
+        sed -i "s|aws_access_key *= .*|aws_access_key = \\\"$AWS_ACCESS_KEY\\\"|" $TFVARS
+        sed -i "s|aws_secret_key *= .*|aws_secret_key = \\\"$AWS_SECRET_KEY\\\"|" $TFVARS
+        sed -i "s|key_name *= .*|key_name = \\\"$KEY_NAME\\\"|" $TFVARS
+        echo "Final tfvars file content:"
+        cat $TFVARS
 
   build:
     commands:
       - echo "[*] Running Terraform"
       - terraform init
       - terraform apply -auto-approve -var-file="$TFVARS"
-      - echo "[*] Getting Terraform outputs"
-      - export PUBLIC_IP=$(terraform output -raw public_ip)
-      - export KEY_OUT=$(terraform output -raw final_key_name)
+      - echo "[*] Fetching outputs"
+      - PUBLIC_IP=$(terraform output -raw public_ip)
+      - KEY_OUT=$(terraform output -raw final_key_name)
       - echo "Public IP: $PUBLIC_IP"
-      - echo "PEM Key: $KEY_OUT.pem"
-      - echo "[*] Running Ansible Playbook"
+      - echo "Key file: $KEY_OUT.pem"
+      - echo "[*] Running Ansible"
       - ansible-playbook -i "$PUBLIC_IP," install-splunk.yml -u ec2-user --private-key "keys/$KEY_OUT.pem"
 
 artifacts:
