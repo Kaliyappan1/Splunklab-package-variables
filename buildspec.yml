@@ -28,14 +28,12 @@ phases:
     commands:
       - cd $CODEBUILD_SRC_DIR
       - echo "[*] Selecting tfvars file based on HOURS"
-      - |
-        if [ "$HOURS" = "10" ]; then export TFVARS="pkg_100.tfvars"; fi
-        if [ "$HOURS" = "21" ]; then export TFVARS="pkg_200.tfvars"; fi
-        if [ "$HOURS" = "33" ]; then export TFVARS="pkg_300.tfvars"; fi
-        if [ "$HOURS" = "45" ]; then export TFVARS="pkg_400.tfvars"; fi
-        if [ "$HOURS" = "56" ]; then export TFVARS="pkg_500.tfvars"; fi
-        echo "Selected tfvars: $TFVARS"
-      - echo "[*] Injecting values into tfvars file"
+      - if [ "$HOURS" = "10" ]; then export TFVARS="pkg_100.tfvars"; fi
+      - if [ "$HOURS" = "21" ]; then export TFVARS="pkg_200.tfvars"; fi
+      - if [ "$HOURS" = "33" ]; then export TFVARS="pkg_300.tfvars"; fi
+      - if [ "$HOURS" = "45" ]; then export TFVARS="pkg_400.tfvars"; fi
+      - if [ "$HOURS" = "56" ]; then export TFVARS="pkg_500.tfvars"; fi
+      - echo "Selected tfvars: $TFVARS"
       - sed -i "s|usermail *= .*|usermail = \\\"$USER_EMAIL\\\"|" $TFVARS
       - sed -i "s|aws_region *= .*|aws_region = \\\"$AWS_REGION\\\"|" $TFVARS
       - sed -i "s|aws_access_key *= .*|aws_access_key = \\\"$AWS_ACCESS_KEY\\\"|" $TFVARS
@@ -44,7 +42,7 @@ phases:
 
   build:
     commands:
-      - echo "[*] Running Terraform..."
+      - echo "[*] Running Terraform"
       - terraform init
       - terraform apply -auto-approve -var-file="$TFVARS"
       - echo "[*] Getting Terraform outputs"
